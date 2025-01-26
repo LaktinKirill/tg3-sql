@@ -12,12 +12,10 @@ def create_db_connection():
     return connection, connection.cursor()
 
 
-# Инициализация бота
 API_TOKEN = '????????'
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
-# Класс состояний
 class StudentForm(StatesGroup):
     name = State()
     age = State()
@@ -36,29 +34,29 @@ def init_db():
 
 init_db()
 
-# Обработчик команды /start
-@dp.message(CommandStart())  # Изменен декоратор
+
+@dp.message(CommandStart())  
 async def start(message: types.Message, state: FSMContext):
     await message.reply("Привет! Давай зарегистрируем ученика. Введи имя:")
     await state.set_state(StudentForm.name)
 
 
-# Обработчик отмены
-@dp.message(Command("cancel"))  # Изменен декоратор
+
+@dp.message(Command("cancel"))  
 async def cancel_handler(message: types.Message, state: FSMContext):
-    await state.clear()  # Используем clear() вместо finish()
+    await state.clear()  
     await message.reply("Ввод отменен")
 
-# Обработчик имени
-@dp.message(StudentForm.name)  # Убран параметр state=
+
+@dp.message(StudentForm.name)  
 async def process_name(message: types.Message, state: FSMContext):
-    await state.update_data(name=message.text)  # Обновлен метод сохранения данных
+    await state.update_data(name=message.text)  
     await message.reply("Отлично! Теперь введи возраст:")
     await state.set_state(StudentForm.age)
     
     
-# Обработчик возраста
-@dp.message(StudentForm.age)  # Убран параметр state=
+
+@dp.message(StudentForm.age)  
 async def process_age(message: types.Message, state: FSMContext):
     try:
         age = int(message.text)
@@ -72,18 +70,17 @@ async def process_age(message: types.Message, state: FSMContext):
         await message.reply("Возраст должен быть числом! Попробуй еще раз:")
 
 
-# Обработчик класса
 @dp.message(StudentForm.grade)
 async def process_grade(message: types.Message, state: FSMContext):
     data = await state.get_data()
     data['grade'] = message.text
     
-    # Создаем новое соединение для записи
+   
     connection = sqlite3.connect('school_data.db')
     cursor = connection.cursor()
     
     try:
-        # Сохраняем в базу данных
+       
         cursor.execute('INSERT INTO students (name, age, grade) VALUES (?, ?, ?)',
                       (data['name'], data['age'], data['grade']))
         connection.commit()
