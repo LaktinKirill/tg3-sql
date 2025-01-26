@@ -13,7 +13,7 @@ def create_db_connection():
 
 
 # Инициализация бота
-API_TOKEN = '6972189764:AAE3ByZHHuIRx-RWn22HMC6QjQdg7rDkpfE'
+API_TOKEN = '????????'
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
@@ -79,20 +79,41 @@ async def process_grade(message: types.Message, state: FSMContext):
     data['grade'] = message.text
     
     # Создаем новое соединение для записи
-    conn = sqlite3.connect('school_data.db')
-    cursor = conn.cursor()
+    connection = sqlite3.connect('school_data.db')
+    cursor = connection.cursor()
+    
     try:
         # Сохраняем в базу данных
         cursor.execute('INSERT INTO students (name, age, grade) VALUES (?, ?, ?)',
                       (data['name'], data['age'], data['grade']))
-        conn.commit()
+        connection.commit()
         await state.clear()
         await message.reply("Данные успешно сохранены! Для нового ввода нажми /start")
     except sqlite3.Error as e:
         await message.reply(f"Произошла ошибка при сохранении: {e}")
     finally:
-        conn.close()
+        cursor.close()
+        connection.close()
 
+@dp.message(Command("list"))
+async def list_students(message: types.Message):
+    connection = sqlite3.connect('school_data.db')
+    cursor = connection.cursor()
+    try:
+        cursor.execute('SELECT * FROM students')
+        students = cursor.fetchall()
+        if students:
+            response = "Список всех учеников:\n\n"
+            for student in students:
+                response += f"ID: {student[0]}, Имя: {student[1]}, Возраст: {student[2]}, Класс: {student[3]}\n"
+        else:
+            response = "База данных пуста"
+        await message.reply(response)
+    except sqlite3.Error as e:
+        await message.reply(f"Ошибка при чтении из базы данных: {e}")
+    finally:
+        cursor.close()
+        connection.close()
 
 
 async def main():
